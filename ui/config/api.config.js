@@ -14,8 +14,8 @@ export const API_CONFIG = {
 
   // Mock server configuration (only for testing)
   MOCK_SERVER: {
-    ENABLED: false,  // Set to true only for testing without backend
-    AUTO_DETECT: true,  // Probe /health/live; fall back to mock server when no real backend is reachable
+    ENABLED: true,  // Preview has no real backend — force the in-browser mock (health, pose, stream, live WS)
+    AUTO_DETECT: true,  // Also fall back to mock if a real backend probe fails
   },
   
   // API Endpoints

@@ -287,7 +287,23 @@ export class MockServer {
         this.protocols = protocols;
         this.readyState = WebSocket.CONNECTING;
         this.bufferedAmount = 0;
-        
+
+        // Bridge on* properties (onopen/onmessage/onerror/onclose) to dispatched
+        // events. A plain EventTarget subclass does NOT invoke these the way a
+        // native WebSocket does, and websocket.service.js relies on ws.onopen.
+        this.onopen = null;
+        this.onmessage = null;
+        this.onerror = null;
+        this.onclose = null;
+        const _dispatch = super.dispatchEvent.bind(this);
+        this.dispatchEvent = (event) => {
+          const handler = this['on' + event.type];
+          if (typeof handler === 'function') {
+            try { handler.call(this, event); } catch (e) { /* swallow handler errors */ }
+          }
+          return _dispatch(event);
+        };
+
         // Simulate connection
         setTimeout(() => {
           this.readyState = WebSocket.OPEN;
