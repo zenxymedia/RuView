@@ -4,11 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview --port 4173"
+    "dev": "sirv ui --host --port 5173 --dev --no-clear",
+    "preview": "sirv ui --host --port 5173 --no-clear"
   },
   "devDependencies": {
-    "vite": "^5.4.10"
+    "sirv-cli": "^3.0.1"
   }
 }
