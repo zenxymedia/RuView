@@ -165,6 +165,74 @@ export class MockServer {
     return persons;
   }
 
+  // Generate a mock WiFi-sensing frame matching the backend's `sensing_update`
+  // shape (see sensing.service.js _generateSimulatedData). Marked source
+  // "simulated" so the UI shows "SIMULATED DATA" rather than a red OFFLINE state.
+  generateSensingFrame() {
+    const t = Date.now() / 1000;
+    const variance = 1.5 + Math.sin(t * 0.1) * 1.0;
+    const motionBand = 0.05 + Math.abs(Math.sin(t * 0.3)) * 0.15;
+    const breathBand = 0.03 + Math.abs(Math.sin(t * 0.05)) * 0.08;
+    const baseRssi = -45 + Math.sin(t * 0.5) * 3;
+    const isPresent = variance > 0.8;
+    const isActive = motionBand > 0.12;
+
+    // 20x20 signal field with a moving "body" blob
+    const gridSize = 20;
+    const values = [];
+    const cx = gridSize / 2, cy = gridSize / 2;
+    const bx = cx + 3 * Math.sin(t * 0.2);
+    const by = cy + 2 * Math.cos(t * 0.15);
+    for (let iz = 0; iz < gridSize; iz++) {
+      for (let ix = 0; ix < gridSize; ix++) {
+        const dist = Math.sqrt((ix - cx) ** 2 + (iz - cy) ** 2);
+        let v = Math.max(0, 1 - dist / (gridSize * 0.7)) * 0.3;
+        if (isPresent) {
+          const bodyDist = Math.sqrt((ix - bx) ** 2 + (iz - by) ** 2);
+          v += Math.exp(-bodyDist * bodyDist / 8) * (0.3 + motionBand * 3);
+        }
+        values.push(Math.min(1, Math.max(0, v + Math.random() * 0.05)));
+      }
+    }
+
+    return {
+      type: 'sensing_update',
+      timestamp: t,
+      source: 'simulated',
+      nodes: [{
+        node_id: 1,
+        rssi_dbm: baseRssi,
+        position: [2, 0, 1.5],
+        amplitude: [],
+        subcarrier_count: 0,
+      }],
+      node_features: [{ node_id: 1, rssi_dbm: baseRssi }],
+      features: {
+        mean_rssi: baseRssi,
+        variance,
+        std: Math.sqrt(variance),
+        motion_band_power: motionBand,
+        breathing_band_power: breathBand,
+        dominant_freq_hz: 0.3 + Math.sin(t * 0.02) * 0.1,
+        change_points: Math.floor(Math.random() * 3),
+        spectral_power: motionBand + breathBand + Math.random() * 0.1,
+        range: variance * 3,
+        iqr: variance * 1.5,
+        skewness: (Math.random() - 0.5) * 0.5,
+        kurtosis: Math.random() * 2,
+      },
+      classification: {
+        motion_level: isActive ? 'active' : (isPresent ? 'present_still' : 'absent'),
+        presence: isPresent,
+        confidence: isPresent ? 0.75 + Math.random() * 0.2 : 0.5 + Math.random() * 0.3,
+      },
+      signal_field: {
+        grid_size: [gridSize, 1, gridSize],
+        values,
+      },
+    };
+  }
+
   // Generate mock keypoints (COCO format)
   generateMockKeypoints() {
     const keypoints = [];
@@ -336,6 +404,9 @@ export class MockServer {
       
       close(code = 1000, reason = '') {
         this.readyState = WebSocket.CLOSING;
+        if (this.poseInterval) clearInterval(this.poseInterval);
+        if (this.eventInterval) clearInterval(this.eventInterval);
+        if (this.sensingInterval) clearInterval(this.sensingInterval);
         setTimeout(() => {
           this.readyState = WebSocket.CLOSED;
           this.dispatchEvent(new CloseEvent('close', { code, reason, wasClean: true }));
@@ -383,6 +454,17 @@ export class MockServer {
           }, 1000);
         }
         
+        // Send periodic sensing frames if this is the sensing stream
+        if (this.url.includes('/ws/sensing')) {
+          this.sensingInterval = setInterval(() => {
+            if (this.readyState === WebSocket.OPEN) {
+              this.dispatchEvent(new MessageEvent('message', {
+                data: JSON.stringify(mockServer.generateSensingFrame())
+              }));
+            }
+          }, 200); // 5 Hz
+        }
+
         // Send periodic events if this is an event stream
         if (this.url.includes('/stream/events')) {
           this.eventInterval = setInterval(() => {
