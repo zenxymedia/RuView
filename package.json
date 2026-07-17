@@ -1,0 +1,13 @@
+{
+  "name": "ruview-ui-preview",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "sirv ui --host --port 5173 --dev --no-clear",
+    "preview": "sirv ui --host --port 5173 --no-clear"
+  },
+  "devDependencies": {
+    "sirv-cli": "^3.0.1"
+  }
+}

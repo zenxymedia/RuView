@@ -86,6 +86,11 @@ class WiFiDensePoseApp {
       
       // Show notification to user
       this.showBackendStatus('Mock server active - testing mode', 'warning');
+
+      // Start the sensing WebSocket service so the dashboard and live-demo
+      // banners connect to the mock /ws/sensing stream instead of showing
+      // the red "OFFLINE — SERVER UNREACHABLE" state.
+      sensingService.start();
     } else {
       console.log('🔌 Connecting to backend...');
 
