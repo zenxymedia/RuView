@@ -68,7 +68,7 @@ export class Scene {
     this.clock = new THREE.Clock();
 
     // Handle resize
-    this._resizeObserver = new ResizeObserver(() => this._onResize());
+    this._resizeObserver = new ResizeObserver(() => requestAnimationFrame(() => this._onResize()));
     this._resizeObserver.observe(this.container);
     window.addEventListener('resize', () => this._onResize());
   }

@@ -412,12 +412,15 @@ export class PoseDetectionCanvas {
 
   setupAutoResize() {
     const resizeObserver = new ResizeObserver(entries => {
-      const entry = entries[0];
-      const { width } = entry.contentRect;
-      const height = Math.round(width * 0.75); // 4:3 aspect ratio
-      
-      this.renderer.resize(width, height);
-      this.logger.debug('Canvas auto-resized', { width, height });
+      requestAnimationFrame(() => {
+        const entry = entries[0];
+        if (!entry) return;
+        const { width } = entry.contentRect;
+        const height = Math.round(width * 0.75); // 4:3 aspect ratio
+
+        this.renderer.resize(width, height);
+        this.logger.debug('Canvas auto-resized', { width, height });
+      });
     });
 
     resizeObserver.observe(this.container);

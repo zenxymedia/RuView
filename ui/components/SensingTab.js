@@ -381,11 +381,13 @@ export class SensingTab {
     if (!viewport || !window.ResizeObserver) return;
 
     this._resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        if (this.splatRenderer) {
-          this.splatRenderer.resize(entry.contentRect.width, entry.contentRect.height);
+      requestAnimationFrame(() => {
+        for (const entry of entries) {
+          if (this.splatRenderer) {
+            this.splatRenderer.resize(entry.contentRect.width, entry.contentRect.height);
+          }
         }
-      }
+      });
     });
     this._resizeObserver.observe(viewport);
   }
